@@ -1,0 +1,28 @@
+
+# Arquitectura del proyecto
+
+El proyecto DataSalud Perú está organizado en las siguientes etapas:
+
+1. Datos de entrada:
+   Archivos CSV de RENIPRESS y neumonía.
+
+2. Procesamiento:
+   Python realiza la lectura, transformación y preparación
+   de los datos.
+
+3. Almacenamiento:
+   SQL Server almacena la información procesada en el
+   Data Warehouse.
+
+4. Base de datos NoSQL:
+   MongoDB almacena información en las colecciones
+   renipress y neumonia_piura.
+
+5. Procesamiento adicional:
+   Apache Spark permite realizar operaciones de análisis
+   sobre los datos.
+
+6. Visualización:
+   Power BI permite presentar los resultados mediante
+   gráficos, indicadores y filtros.
+
