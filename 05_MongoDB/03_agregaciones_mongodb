@@ -1,0 +1,41 @@
+
+// BASE DE DATOS: DataSalud_NoSQL
+// COLECCION: neumonia_piura
+
+// 1. Contar la cantidad de registros
+db.neumonia_piura.aggregate([
+  {
+    $count: "total_registros"
+  }
+])
+
+// 2. Calcular el total de casos
+// Verificar que el campo casos sea numérico.
+db.neumonia_piura.aggregate([
+  {
+    $group: {
+      _id: null,
+      total_casos: { $sum: "$casos" }
+    }
+  }
+])
+
+// 3. Agrupar los casos por año
+db.neumonia_piura.aggregate([
+  {
+    $group: {
+      _id: "$anio",
+      total_casos: { $sum: "$casos" }
+    }
+  },
+  {
+    $sort: { _id: 1 }
+  }
+])
+
+// 4. Contar los establecimientos registrados
+db.renipress.aggregate([
+  {
+    $count: "total_establecimientos"
+  }
+])

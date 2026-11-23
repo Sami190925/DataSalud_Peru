@@ -1,0 +1,24 @@
+
+// BASE DE DATOS: DataSalud_NoSQL
+
+// COLECCION: neumonia_piura
+
+// 1. Visualizar todos los documentos
+db.neumonia_piura.find({})
+
+// 2. Mostrar los primeros 10 documentos
+db.neumonia_piura.find({}).limit(10)
+
+// 3. Contar los documentos de la colección
+db.neumonia_piura.countDocuments({})
+
+// COLECCION: renipress
+
+// 4. Visualizar los establecimientos de salud
+db.renipress.find({})
+
+// 5. Mostrar los primeros 10 establecimientos
+db.renipress.find({}).limit(10)
+
+// 6. Contar los establecimientos registrados
+db.renipress.countDocuments({})
