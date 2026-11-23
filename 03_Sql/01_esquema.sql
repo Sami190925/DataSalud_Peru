@@ -1,0 +1,300 @@
+
+/* =====================================================================
+   DataSalud Perú - CIIN1021P
+   ===================================================================== */
+
+IF DB_ID(N'DataSalud') IS NULL
+    CREATE DATABASE DataSalud;
+GO
+
+USE DataSalud;
+GO
+
+/* ======================== TABLAS DE LOG ======================== */
+
+IF OBJECT_ID(N'dbo.log_EjecucionETL', N'U') IS NULL
+CREATE TABLE dbo.log_EjecucionETL (
+    IdEjecucion INT IDENTITY(1,1) NOT NULL
+        CONSTRAINT PK_log_EjecucionETL PRIMARY KEY,
+    Proceso NVARCHAR(100) NOT NULL,
+    Fuente VARCHAR(20) NOT NULL,
+    Archivo NVARCHAR(260) NULL,
+    FechaInicio DATETIME2(0) NOT NULL
+        CONSTRAINT DF_log_Ejec_Ini DEFAULT SYSDATETIME(),
+    FechaFin DATETIME2(0) NULL,
+    FilasLeidas INT NULL,
+    FilasCargadas INT NULL,
+    FilasRechazadas INT NULL,
+    Estado VARCHAR(20) NOT NULL,
+    Mensaje NVARCHAR(4000) NULL,
+    Usuario SYSNAME NOT NULL
+        CONSTRAINT DF_log_Ejec_Usr DEFAULT ORIGINAL_LOGIN(),
+    CONSTRAINT CK_log_Ejec_Estado
+        CHECK (Estado IN ('EN_CURSO','OK','ERROR','ERROR_CARGA'))
+);
+GO
+
+IF OBJECT_ID(N'dbo.log_CalidadDatos', N'U') IS NULL
+CREATE TABLE dbo.log_CalidadDatos (
+    IdCalidad INT IDENTITY(1,1) NOT NULL
+        CONSTRAINT PK_log_CalidadDatos PRIMARY KEY,
+    IdEjecucion INT NOT NULL
+        CONSTRAINT FK_log_Calidad_Ejec
+        REFERENCES dbo.log_EjecucionETL(IdEjecucion),
+    CodigoRegla VARCHAR(10) NOT NULL,
+    Descripcion NVARCHAR(200) NOT NULL,
+    Fuente VARCHAR(20) NOT NULL,
+    Cantidad INT NOT NULL,
+    Fecha DATETIME2(0) NOT NULL
+        CONSTRAINT DF_log_Calidad_Fec DEFAULT SYSDATETIME()
+);
+GO
+
+IF OBJECT_ID(N'dbo.ExcepcionesDatos', N'U') IS NULL
+CREATE TABLE dbo.ExcepcionesDatos (
+    IdExcepcion INT IDENTITY(1,1) NOT NULL
+        CONSTRAINT PK_ExcepcionesDatos PRIMARY KEY,
+    IdEjecucion INT NOT NULL
+        CONSTRAINT FK_Excepciones_Ejec
+        REFERENCES dbo.log_EjecucionETL(IdEjecucion),
+    Fuente VARCHAR(20) NOT NULL,
+    IdFilaStg INT NULL,
+    ClaveOrigen NVARCHAR(100) NULL,
+    CodigoRegla VARCHAR(10) NOT NULL,
+    Detalle NVARCHAR(300) NOT NULL,
+    Accion VARCHAR(20) NOT NULL,
+    Estado VARCHAR(20) NOT NULL
+        CONSTRAINT DF_Excepciones_Est DEFAULT 'PENDIENTE',
+    Fecha DATETIME2(0) NOT NULL
+        CONSTRAINT DF_Excepciones_Fec DEFAULT SYSDATETIME(),
+    CONSTRAINT CK_Excepciones_Accion
+        CHECK (Accion IN ('RECHAZADO','REVISAR'))
+);
+GO
+
+IF OBJECT_ID(N'dbo.log_Auditoria', N'U') IS NULL
+CREATE TABLE dbo.log_Auditoria (
+    IdAuditoria BIGINT IDENTITY(1,1) NOT NULL
+        CONSTRAINT PK_log_Auditoria PRIMARY KEY,
+    Tabla SYSNAME NOT NULL,
+    Operacion VARCHAR(10) NOT NULL,
+    IdRegistro INT NULL,
+    Usuario SYSNAME NOT NULL
+        CONSTRAINT DF_log_Aud_Usr DEFAULT ORIGINAL_LOGIN(),
+    Host NVARCHAR(128) NULL
+        CONSTRAINT DF_log_Aud_Host DEFAULT HOST_NAME(),
+    Fecha DATETIME2(0) NOT NULL
+        CONSTRAINT DF_log_Aud_Fec DEFAULT SYSDATETIME(),
+    DatosAnteriores NVARCHAR(MAX) NULL,
+    DatosNuevos NVARCHAR(MAX) NULL,
+    Detalle NVARCHAR(400) NULL,
+    CONSTRAINT CK_log_Aud_Oper
+        CHECK (Operacion IN ('INSERT','UPDATE','DELETE','RECHAZO'))
+);
+GO
+
+/* ======================== STAGING ======================== */
+
+IF OBJECT_ID(N'dbo.stg_Neumonia', N'U') IS NULL
+CREATE TABLE dbo.stg_Neumonia (
+    IdFila INT IDENTITY(1,1) NOT NULL
+        CONSTRAINT PK_stg_Neumonia PRIMARY KEY,
+    FECHA_CORTE NVARCHAR(100) NULL,
+    DEPARTAMENTEO NVARCHAR(100) NULL,
+    PROVINCIA NVARCHAR(100) NULL,
+    DISTRITO NVARCHAR(100) NULL,
+    UBIGEO NVARCHAR(100) NULL,
+    E_SALUD NVARCHAR(100) NULL,
+    ESTABLECIMIENTO NVARCHAR(100) NULL,
+    ANO NVARCHAR(100) NULL,
+    SEMANA NVARCHAR(100) NULL,
+    MES NVARCHAR(100) NULL,
+    NEU_2_11M NVARCHAR(100) NULL,
+    NEU_1_4A NVARCHAR(100) NULL,
+    NEU_5_9A NVARCHAR(100) NULL,
+    NEU_10_19A NVARCHAR(100) NULL,
+    NEU_20_59A NVARCHAR(100) NULL,
+    NEU_60A NVARCHAR(100) NULL
+);
+GO
+
+IF OBJECT_ID(N'dbo.stg_RENIPRESS', N'U') IS NULL
+CREATE TABLE dbo.stg_RENIPRESS (
+    IdFila INT IDENTITY(1,1) NOT NULL
+        CONSTRAINT PK_stg_RENIPRESS PRIMARY KEY,
+    INSTITUCION NVARCHAR(500) NULL,
+    COD_IPRESS NVARCHAR(500) NULL,
+    NOMBRE NVARCHAR(500) NULL,
+    CLASIFICACION NVARCHAR(500) NULL,
+    TIPO_ESTABLECIMIENTO NVARCHAR(500) NULL,
+    DEPARTAMENTO NVARCHAR(500) NULL,
+    PROVINCIA NVARCHAR(500) NULL,
+    DISTRITO NVARCHAR(500) NULL,
+    UBIGEO NVARCHAR(500) NULL,
+    DIRECCION NVARCHAR(500) NULL,
+    CO_DISA NVARCHAR(500) NULL,
+    COD_RED NVARCHAR(500) NULL,
+    COD_MICRORRED NVARCHAR(500) NULL,
+    DISA NVARCHAR(500) NULL,
+    RED NVARCHAR(500) NULL,
+    MICRORED NVARCHAR(500) NULL,
+    COD_UE NVARCHAR(500) NULL,
+    UNIDAD_EJECUTORA NVARCHAR(500) NULL,
+    CATEGORIA NVARCHAR(500) NULL,
+    TELEFONO NVARCHAR(500) NULL,
+    HORARIO NVARCHAR(500) NULL,
+    INICIO_ACTIVIDAD NVARCHAR(500) NULL,
+    ESTADO NVARCHAR(500) NULL,
+    NORTE NVARCHAR(500) NULL,
+    ESTE NVARCHAR(500) NULL,
+    IMAGEN_1 NVARCHAR(500) NULL,
+    FE_ACT_IMAGEN_1 NVARCHAR(500) NULL,
+    IMAGEN_2 NVARCHAR(500) NULL,
+    FE_ACT_IMAGEN_2 NVARCHAR(500) NULL,
+    IMAGEN_3 NVARCHAR(500) NULL,
+    FE_ACT_IMAGEN_3 NVARCHAR(500) NULL
+);
+GO
+
+/* ======================== VISTAS DE CARGA ======================== */
+
+CREATE OR ALTER VIEW dbo.vw_Carga_Neumonia
+AS
+SELECT
+    FECHA_CORTE,
+    DEPARTAMENTEO,
+    PROVINCIA,
+    DISTRITO,
+    UBIGEO,
+    E_SALUD,
+    ESTABLECIMIENTO,
+    ANO,
+    SEMANA,
+    MES,
+    NEU_2_11M,
+    NEU_1_4A,
+    NEU_5_9A,
+    NEU_10_19A,
+    NEU_20_59A,
+    NEU_60A
+FROM dbo.stg_Neumonia;
+GO
+
+CREATE OR ALTER VIEW dbo.vw_Carga_RENIPRESS
+AS
+SELECT
+    INSTITUCION,
+    COD_IPRESS,
+    NOMBRE,
+    CLASIFICACION,
+    TIPO_ESTABLECIMIENTO,
+    DEPARTAMENTO,
+    PROVINCIA,
+    DISTRITO,
+    UBIGEO,
+    DIRECCION,
+    CO_DISA,
+    COD_RED,
+    COD_MICRORRED,
+    DISA,
+    RED,
+    MICRORED,
+    COD_UE,
+    UNIDAD_EJECUTORA,
+    CATEGORIA,
+    TELEFONO,
+    HORARIO,
+    INICIO_ACTIVIDAD,
+    ESTADO,
+    NORTE,
+    ESTE,
+    IMAGEN_1,
+    FE_ACT_IMAGEN_1,
+    IMAGEN_2,
+    FE_ACT_IMAGEN_2,
+    IMAGEN_3,
+    FE_ACT_IMAGEN_3
+FROM dbo.stg_RENIPRESS;
+GO
+
+/* ======================== TABLAS VALIDADAS ======================== */
+
+IF OBJECT_ID(N'dbo.Neumonia_Validada', N'U') IS NULL
+CREATE TABLE dbo.Neumonia_Validada (
+    IdNeumonia INT IDENTITY(1,1) NOT NULL
+        CONSTRAINT PK_Neumonia_Validada PRIMARY KEY,
+    IdEjecucion INT NULL
+        CONSTRAINT FK_Neumonia_Ejec
+        REFERENCES dbo.log_EjecucionETL(IdEjecucion),
+    IdFilaStg INT NULL,
+    FechaCorte DATE NULL,
+    Departamento NVARCHAR(60) NULL,
+    Provincia NVARCHAR(60) NULL,
+    Distrito NVARCHAR(100) NULL,
+    Ubigeo CHAR(6) NOT NULL,
+    CodEstablecimiento VARCHAR(10) NOT NULL,
+    Establecimiento NVARCHAR(200) NULL,
+    Anio SMALLINT NOT NULL,
+    Semana SMALLINT NOT NULL,
+    Mes NVARCHAR(20) NULL,
+    NEU_2_11M INT NOT NULL
+        CONSTRAINT DF_Neu_c1 DEFAULT 0,
+    NEU_1_4A INT NOT NULL
+        CONSTRAINT DF_Neu_c2 DEFAULT 0,
+    NEU_5_9A INT NOT NULL
+        CONSTRAINT DF_Neu_c3 DEFAULT 0,
+    NEU_10_19A INT NOT NULL
+        CONSTRAINT DF_Neu_c4 DEFAULT 0,
+    NEU_20_59A INT NOT NULL
+        CONSTRAINT DF_Neu_c5 DEFAULT 0,
+    NEU_60A INT NOT NULL
+        CONSTRAINT DF_Neu_c6 DEFAULT 0,
+    FechaCarga DATETIME2(0) NOT NULL
+        CONSTRAINT DF_Neu_Carga DEFAULT SYSDATETIME(),
+    CONSTRAINT UQ_Neumonia_Grano
+        UNIQUE (CodEstablecimiento, Anio, Semana, Ubigeo)
+);
+GO
+
+IF OBJECT_ID(N'dbo.RENIPRESS_Validada', N'U') IS NULL
+CREATE TABLE dbo.RENIPRESS_Validada (
+    CodIpress VARCHAR(8) NOT NULL
+        CONSTRAINT PK_RENIPRESS_Validada PRIMARY KEY,
+    IdEjecucion INT NULL
+        CONSTRAINT FK_RENIPRESS_Ejec
+        REFERENCES dbo.log_EjecucionETL(IdEjecucion),
+    Institucion NVARCHAR(100) NULL,
+    Nombre NVARCHAR(200) NOT NULL,
+    Clasificacion NVARCHAR(300) NULL,
+    TipoEstablecimiento NVARCHAR(100) NULL,
+    Departamento NVARCHAR(60) NULL,
+    Provincia NVARCHAR(60) NULL,
+    Distrito NVARCHAR(100) NULL,
+    Ubigeo CHAR(6) NOT NULL,
+    Direccion NVARCHAR(300) NULL,
+    Disa NVARCHAR(100) NULL,
+    Red NVARCHAR(100) NULL,
+    Microred NVARCHAR(100) NULL,
+    Categoria NVARCHAR(20) NULL,
+    InicioActividad DATE NULL,
+    Estado NVARCHAR(60) NULL,
+    Latitud DECIMAL(12,8) NULL,
+    Longitud DECIMAL(12,8) NULL,
+    FechaCarga DATETIME2(0) NOT NULL
+        CONSTRAINT DF_Ren_Carga DEFAULT SYSDATETIME()
+);
+GO
+
+IF OBJECT_ID(N'dbo.Mapeo_Establecimientos', N'U') IS NULL
+CREATE TABLE dbo.Mapeo_Establecimientos (
+    IdMapeo INT IDENTITY(1,1) NOT NULL
+        CONSTRAINT PK_Mapeo_Establecimientos PRIMARY KEY,
+    CodEstablecimiento VARCHAR(10) NOT NULL,
+    CodIpress VARCHAR(8) NULL,
+    MetodoVerificacion NVARCHAR(200) NULL,
+    Verificado BIT NOT NULL
+        CONSTRAINT DF_Mapeo_Ver DEFAULT 0,
+    Fecha DATETIME2(0) NOT NULL
+        CONSTRAINT DF_Mapeo_Fec DEFAULT SYSDATETIME()
+);
+GO
