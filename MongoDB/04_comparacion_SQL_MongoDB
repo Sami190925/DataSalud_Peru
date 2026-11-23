@@ -1,0 +1,34 @@
+
+# Comparación entre SQL Server y MongoDB
+
+## 1. Objetivo
+
+Comparar el uso de una base de datos relacional y una base de datos NoSQL durante el desarrollo del proyecto DataSalud Perú.
+
+## 2. SQL Server
+
+SQL Server utiliza tablas, filas y columnas para organizar la información. En el proyecto se utilizó para trabajar con el Data Warehouse y almacenar los registros de neumonía.
+
+## 3. MongoDB
+
+MongoDB utiliza documentos agrupados en colecciones. En este proyecto se creó la base de datos DataSalud_NoSQL, que contiene las colecciones renipress y neumonia_piura.
+
+Se utilizó MongoDB Compass para visualizar, administrar y consultar la información.
+
+## 4. Diferencias
+
+| Característica | SQL Server | MongoDB |
+|---|---|---|
+| Tipo | Relacional | NoSQL |
+| Organización | Tablas | Colecciones |
+| Registros | Filas | Documentos |
+| Consultas | SQL | Filtros y agregaciones |
+| Estructura | Esquema definido | Esquema flexible |
+
+## 5. Conclusión
+
+SQL Server y MongoDB permiten almacenar y consultar información, pero presentan diferentes formas de organización.
+
+SQL Server facilita el manejo de información estructurada y relacionada, mientras que MongoDB permite trabajar con documentos agrupados en colecciones.
+
+El uso de ambas herramientas permitió conocer y comparar dos alternativas de almacenamiento de datos dentro del proyecto.
